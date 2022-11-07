@@ -5,8 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.StringTokenizer;
 
 public class UserHandler implements Runnable {
 	Boolean isConnected;
@@ -29,11 +28,11 @@ public class UserHandler implements Runnable {
 	}
 	
 	private static String findReceptorName(String message) {
-		String regex = "\\bPoli.*\\b";
-		Pattern pattern = Pattern.compile(regex);
-		Matcher match = pattern.matcher(message);
-		match.find();
-		return match.group();
+		StringTokenizer nameToken = new StringTokenizer(message,"-");
+		nameToken.nextToken();
+        String userName = nameToken.nextToken();
+
+		return userName;
 	}
 
 	@Override
@@ -46,14 +45,17 @@ public class UserHandler implements Runnable {
 					if (receptorUser == null) {
 						String receptorName = findReceptorName(message);
 						receptorUser = ChatServer.users.get(receptorName);
-					}
+					} 
 					
 					if (receptorUser != null) {
 						receptorUser.messageOutput.writeUTF(userName + " --> " + message);
 					}
 					
-					if (message.toLowerCase().compareTo("chao") == 0 && receptorUser != null) {
+					
+					if (message.toLowerCase().compareTo("chao") == 0 && receptorUser != null) {		
+						receptorUser.messageOutput.writeUTF("----------------------------------------------");
 						receptorUser.messageOutput.writeUTF(userName + " finished the chat");
+						receptorUser.messageOutput.writeUTF("----------------------------------------------");
 						receptorUser = null;
 						isConnected = false;
 						socket.close();
@@ -77,15 +79,25 @@ public class UserHandler implements Runnable {
 	
 	public void printUsersConnected() {
 		HashMap<String, UserHandler> users = ChatServer.users;
-		printInUserConsole("------------------------");
-		printInUserConsole("Total users online: " + users.size());
-		if(users.size() > 0) {
-			printInUserConsole("List of users");
-			users.forEach(
-					(key, value)
-					-> printInUserConsole(key + " is connected"));			
+		int numberOfUsers = users.size();
+		
+		if (numberOfUsers > 1) {
+			printInUserConsole("-----------------------------------------------");
+			printInUserConsole("Total users online: " + numberOfUsers);
+			if(users.size() > 0) {
+				printInUserConsole("List of users");
+				users.forEach(
+						(key, value)
+						-> printInUserConsole(key + " is connected"));			
+			}
+			printInUserConsole("-----------------------------------------------");
+			printInUserConsole("Please enter a username preceded by hola -");
+			printInUserConsole("-----------------------------------------------");
+		} else {
+			printInUserConsole("-----------------------------------------------");
+			printInUserConsole("You'r the only one user online, please wait until someone else is online");
+			printInUserConsole("-----------------------------------------------");
 		}
-		printInUserConsole("------------------------");
 	}
 	
 	public void printInUserConsole(String message) {
